@@ -9,7 +9,7 @@
 			{
 				border: 1px solid #76B900;
 				border-collapse: collapse;
-				padding: 5px;
+				padding: 20px;
 				align: center;
 			}
 			.fullsizeinputs
@@ -21,7 +21,13 @@
 				margin: 0px;
 				cursor: pointer;
 				font-weight: bold;
-				margin: 5px;
+				font-size: large;
+				padding: 20px;
+				margin: 0px;
+			}
+			.slidecontainer
+			{
+				min-width: 400px;
 			}
 			table
 			{
@@ -38,7 +44,6 @@
 				height: 100%;
 				background-color: black;
 				color: white;
-				/*#76B900*/
 			}
 			#thx
 			{
@@ -61,64 +66,36 @@
 			{
 				color: lightblue;
 			}
+			textarea
+			{
+				height: 100%;
+				width: 100%;
+				min-height: 100px;
+				background-color: #333;
+				border: 1px solid black;
+				color: #76B900;
+			}
 		</style>
+		<script>
+			function updateLabel(id)
+			{
+				var value = document.getElementById(id).value;
+				if (value == 0)
+					document.getElementById(id + 'label').innerHTML = 'Nicht belegt';
+				else
+					document.getElementById(id + 'label').innerHTML = value + '/10 aufwändig';
+			}
+		</script>
 	</head>
 	<body>
 		<?php
 
 			$DATA_FILE = '/var/www/data/survey-data.tsv';
-
-			function value_to_module_code($value)
-			{
-				return strtolower(explode(' - ', $value, 2)[0]);
-			}
+			$MAX_TEXTFIELD_STRLEN = 8192;
 
 			function is_valid_value($value)
 			{
-				$module_code = value_to_module_code($value);
-				if ($module_code == 'm1')
-					return true;
-				if ($module_code == 'm2')
-					return true;
-				if ($module_code == 'm3')
-					return true;
-				if ($module_code == 'm4')
-					return true;
-				if ($module_code == 'm5')
-					return true;
-				return false;
-			}
-
-			//Determine step in the survey and create list of answers
-			$step = 1;
-			$answers = array();
-			if (isset($_GET))
-			{
-				if (isset($_GET['aufwand1']) and is_valid_value($_GET['aufwand1']))
-				{
-					$step = 2;
-					array_push($answers, value_to_module_code($_GET['aufwand1']));
-				}
-				if ($step == 2 and isset($_GET['aufwand2']) and is_valid_value($_GET['aufwand2']))
-				{
-					$step = 3;
-					array_push($answers, value_to_module_code($_GET['aufwand2']));
-				}
-				if ($step == 3 and isset($_GET['aufwand3']) and is_valid_value($_GET['aufwand3']))
-				{
-					$step = 4;
-					array_push($answers, value_to_module_code($_GET['aufwand3']));
-				}
-				if ($step == 4 and isset($_GET['aufwand4']) and is_valid_value($_GET['aufwand4']))
-				{
-					$step = 5;
-					array_push($answers, value_to_module_code($_GET['aufwand4']));
-				}
-				if ($step == 5 and isset($_GET['aufwand5']) and is_valid_value($_GET['aufwand5']))
-				{
-					$step = 6;
-					array_push($answers, value_to_module_code($_GET['aufwand5']));
-				}
+				return (int)$value >= 0 and (int)$value <= 10;
 			}
 
 			//Evaluation mode
@@ -130,106 +107,81 @@
 					echo 'Failed to read survey file, sorry';
 				else
 					echo $contents;
-				echo '</pre>';
+				echo '</pre></body></html>';
+				die();
 			}
 
-			//Handle survey steps
-			elseif ($step == 6) //If the survey is done
+			elseif (isset($_POST['m1']) and isset($_POST['m2']) and isset($_POST['m3']) and isset($_POST['m4']) and isset($_POST['m5']) and isset($_POST['remarks'])) //If the survey is done
 			{
 
 				//Check for validity
-				$is_valid = true;
-				foreach ($answers as $answer)
-					if (!is_valid_value($answer))
-					{
-						$is_valid = false;
-						break;
-					}
-				if (!$is_valid)
+				if (!is_valid_value($_POST['m1']) or !is_valid_value($_POST['m2']) or !is_valid_value($_POST['m3']) or !is_valid_value($_POST['m4']) or !is_valid_value($_POST['m5']) or (isset($_POST['remarks']) and strlen($_POST['remarks']) > $MAX_TEXTFIELD_STRLEN))
 					echo '<p id=err>Deine Stimme konnte leider nicht gespeichert werden: Deine Eingaben sind nicht valide</p>';
 
 				//Safe data
-				$f = fopen($DATA_FILE, 'a');
-				if ($f == false)
-					echo '<p id=err>Deine Stimme konnte leider nicht gespeichert werden: Datei konnte nicht zum schreiben geöffnet werden</p>';
 				else
 				{
-					fprintf($f, "%s\t%s\t%s\t\t\t%s\t\t\t\t%s\t\t\t\t%s\t\t\t\t%s\n", date('c'), $_SERVER['REMOTE_ADDR'], $answers[0], $answers[1], $answers[2], $answers[3], $answers[4]);
-					fclose($f);
-					echo '<p id=thx>Danke für deine Stimme!</p>';
+					$f = fopen($DATA_FILE, 'a');
+					if ($f == false)
+						echo '<p id=err>Deine Stimme konnte leider nicht gespeichert werden: Datei konnte nicht zum schreiben geöffnet werden</p>';
+					else
+					{
+						fprintf($f, "%s\t%s\t%s\t\t%s\t\t%s\t\t%s\t\t%s\t\t%s\n", date('c'), $_SERVER['REMOTE_ADDR'], (int)$_POST['m1'], (int)$_POST['m2'], (int)$_POST['m3'], (int)$_POST['m4'], (int)$_POST['m5'], base64_encode($_POST['remarks']));
+						fclose($f);
+						echo '<p id=thx>Danke für deine Stimme!</p>';
+					}
 				}
 
 			}
-			else
-			{
-				echo '<p>Bla bla, Keks. Hier muss noch Text hin der erklärt was das soll.</p>';
-				echo "<form method=get target=''>";
-				if ($step >= 2)
-					echo "<input type=hidden name=aufwand1 value='${_GET['aufwand1']}' />";
-				if ($step >= 3)
-					echo "<input type=hidden name=aufwand2 value='${_GET['aufwand2']}' />";
-				if ($step >= 4)
-					echo "<input type=hidden name=aufwand3 value='${_GET['aufwand3']}' />";
-				if ($step >= 5)
-					echo "<input type=hidden name=aufwand4 value='${_GET['aufwand4']}' />";
-				echo
-				"
-						<table>
-							<tr>
-				";
-				if ($step == 1)
-					echo "<th>Welches dieser Module war am Aufwändigsten?</th>";
-				if ($step == 2)
-					echo "<th>Welches dieser Module war am Zweitaufwändigsten?</th>";
-				if ($step == 3)
-					echo "<th>Welches dieser Module war am Drittaufwändigsten?</th>";
-				if ($step == 4)
-					echo "<th>Welches dieser Module war am Viertaufwändigsten?</th>";
-				if ($step == 5)
-					echo "<th>Welches dieser Module war am wenigsten aufwändig?</th>";
-				echo "</tr>";
-				if (!in_array('m1', $answers))
-					echo
-					"
-							<tr>
-								<td><input class=fullsizeinputs type=submit name='aufwand$step' value='M1 - Embedded' /></td>
-							</tr>
-					";
-				if (!in_array('m2', $answers))
-					echo
-					"
-							<tr>
-								<td><input class=fullsizeinputs type=submit name='aufwand$step' value='M2 - Mathe' /></td>
-							</tr>
-					";
-				if (!in_array('m3', $answers))
-					echo
-					"
-							<tr>
-								<td><input class=fullsizeinputs type=submit name='aufwand$step' value='M3 - QT' /></td>
-							</tr>
-					";
-				if (!in_array('m4', $answers))
-					echo
-					"
-							<tr>
-								<td><input class=fullsizeinputs type=submit name='aufwand$step' value='M4 - Messtechnik' /></td>
-							</tr>
-					";
-				if (!in_array('m5', $answers))
-					echo
-					"
-							<tr>
-								<td><input class=fullsizeinputs type=submit name='aufwand$step' value='M5 - Projekt' /></td>
-					";
-				echo
-				"
-							</tr>
-						</table>
-					</form>
-				";
-				echo '<p style=font-size:small><a href=\'https://github.com/lukmi15/ce-master-poll\'>Check out the source code on GitHub!</a></p>';
-			}
 		?>
+		<p>Bla bla, Keks. Hier muss noch Text hin der erklärt was das soll.</p>
+		<form method=post target=''>
+			<table>
+				<tr><th colspan=2>Welches dieser Module war wie aufwändig?</th></tr>
+				<tr>
+					<td>M1 - Embedded</td>
+					<td class=slidecontainer>
+						<input type="range" min="0" max="10" value="0" class="slider" name=m1 id=m1 oninput="updateLabel('m1')"/>
+						<label id=m1label for=m1>Nicht belegt</label>
+					</td>
+				</tr>
+				<tr>
+					<td>M2 - Mathe</td>
+					<td class=slidecontainer>
+						<input type="range" min="0" max="10" value="0" class="slider" name=m2 id=m2 oninput="updateLabel('m2')"/>
+						<label id=m2label for=m2>Nicht belegt</label>
+					</td>
+				</tr>
+				<tr>
+					<td>M3 - Qt</td>
+					<td class=slidecontainer>
+						<input type="range" min="0" max="10" value="0" class="slider" name=m3 id=m3 oninput="updateLabel('m3')"/>
+						<label id=m3label for=m3>Nicht belegt</label>
+					</td>
+				</tr>
+				<tr>
+					<td>M4 - Messtechnik</td>
+					<td class=slidecontainer>
+						<input type="range" min="0" max="10" value="0" class="slider" name=m4 id=m4 oninput="updateLabel('m4')"/>
+						<label id=m4label for=m4>Nicht belegt</label>
+					</td>
+				</tr>
+				<tr>
+					<td>M5 - Projekt</td>
+					<td class=slidecontainer>
+						<input type="range" min="0" max="10" value="0" class="slider" name=m5 id=m5 oninput="updateLabel('m5')"/>
+						<label id=m5label for=m5>Nicht belegt</label>
+					</td>
+				</tr>
+				</tr>
+					<td colspan=2>
+						Möchtest du noch was loswerden? (<?php echo $MAX_TEXTFIELD_STRLEN ?> Zeichen erlaubt)<br />
+						<textarea maxlength="<?php echo $MAX_TEXTFIELD_STRLEN; ?>" name=remarks></textarea>
+					</td>
+				<tr>
+				<tr><td style=padding:0px colspan=2><input class=fullsizeinputs type=submit value=Absenden /></td></tr>
+			</table>
+		</form>
+		<p style=font-size:small><a href='https://github.com/lukmi15/ce-master-poll'>Check out the source code on GitHub!</a></p>
 	</body>
 </html>
