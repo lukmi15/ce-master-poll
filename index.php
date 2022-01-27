@@ -134,7 +134,7 @@
 
 			}
 		?>
-		<p>Bla bla, Keks. Hier muss noch Text hin der erklärt was das soll.</p>
+		<p>Umfrage zur Arbeitsbelastung im Master pro Modul</p>
 		<form method=post target=''>
 			<table>
 				<tr><th colspan=2>Welches dieser Module war wie aufwändig?</th></tr>
