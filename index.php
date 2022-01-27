@@ -52,6 +52,15 @@
 				border-radius: 4px;
 				border: 1px solid black;
 			}
+			a:link, a:visited, a:active
+			{
+				color: aqua;
+				text-decoration: none;
+			}
+			a:hover
+			{
+				color: lightblue;
+			}
 		</style>
 	</head>
 	<body>
@@ -219,6 +228,7 @@
 						</table>
 					</form>
 				";
+				echo '<p style=font-size:small><a href=\'https://github.com/lukmi15/ce-master-poll\'>Check out the source code on GitHub!</a></p>';
 			}
 		?>
 	</body>
